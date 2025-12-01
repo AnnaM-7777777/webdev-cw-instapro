@@ -75,8 +75,6 @@ export function renderAddPostPageComponent({ appEl, onGetPosts }) {
             }
         });
 
-        
-
         addButton.addEventListener("click", () => {
             const description = descriptionInput.value;
             const finalImageUrl = imageUrl || imageUrlInput.value;
@@ -87,20 +85,19 @@ export function renderAddPostPageComponent({ appEl, onGetPosts }) {
             }
 
             const tokenString = localStorage.getItem("token");
-            console.log("Содержимое tokenString:", tokenString);  // Добавленная строка
+            console.log("Содержимое tokenString:", tokenString); // Добавленная строка
 
             if (tokenString) {
                 try {
-                    const tokenData = JSON.parse(tokenString);
-                    token = tokenData.user && tokenData.user.user ? tokenData.user.user.token : null; // Если поле user есть, возвращаем токен, иначе null
+                    const tokenData = JSON.parse(tokenString); // → { user: { token: "...", ... } }
+                    token = tokenData && tokenData.user ? tokenData.user.token : null;
+
                     console.log("Извлеченный токен:", token);
                 } catch (error) {
                     console.error(
                         "Ошибка при парсинге токена из localStorage:",
                         error
                     );
-                    // Обработка ошибки парсинга JSON (localStorage может содержать некорректные данные)
-                    token = null;
                 }
             } else {
                 console.warn("Токен не найден в localStorage");
@@ -118,21 +115,24 @@ export function renderAddPostPageComponent({ appEl, onGetPosts }) {
                 description: description,
                 imageUrl: finalImageUrl,
             })
-            .then((newPost) => {
-                alert("Пост успешно добавлен!");
-                console.log("Пост успешно добавлен!  Ответ от сервера:", newPost);
-                descriptionInput.value = "";
-                imageUrlInput.value = "";
-                imageUrl = "";
-                onGetPosts(); //  Обновляем список постов
-                render();
-            })
-            .catch((error) => {
-                console.error("Ошибка при создании поста:", error);
-                showErrorMessage(
-                    `Произошла ошибка при создании поста: ${error.message}`
-                );
-            });
+                .then((newPost) => {
+                    alert("Пост успешно добавлен!");
+                    console.log(
+                        "Пост успешно добавлен!  Ответ от сервера:",
+                        newPost
+                    );
+                    descriptionInput.value = "";
+                    imageUrlInput.value = "";
+                    imageUrl = "";
+                    onGetPosts(); //  Обновляем список постов
+                    render();
+                })
+                .catch((error) => {
+                    console.error("Ошибка при создании поста:", error);
+                    showErrorMessage(
+                        `Произошла ошибка при создании поста: ${error.message}`
+                    );
+                });
         });
     };
 

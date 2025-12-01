@@ -5,17 +5,19 @@ const baseHost = " https://wedev-api.sky.pro";
 const postsHost = `${baseHost}/api/v1/${personalKey}/instapro`;
 
 export function getPosts({ token }) {
+    const headers = {};
+    if (token) {
+        headers.Authorization = token;
+    }
+
     return fetch(postsHost, {
         method: "GET",
-        headers: {
-            Authorization: token,
-        },
+        headers,
     })
         .then((response) => {
             if (response.status === 401) {
                 throw new Error("Нет авторизации");
             }
-
             return response.json();
         })
         .then((data) => {
@@ -40,13 +42,17 @@ export function registerUser({ login, password, name, imageUrl }) {
             return response.json();
         })
         .then((data) => {
-            console.log("Данные, полученные после регистрации:", data);  // <- ДО записи localStorage
+            console.log("Данные, полученные после регистрации:", data); // <- ДО записи localStorage
 
-            const tokenObject  = { user: { token: data.token } };
-            const tokenString = JSON.stringify(tokenObject);
+            const tokenString = JSON.stringify(data);
 
-            console.log("Сохраняемая строка токена в localStorage:", tokenString);
-            localStorage.setItem("token", tokenString);
+            console.log(
+                "Сохраняемая строка токена в localStorage:",
+                tokenString
+            );
+
+            localStorage.setItem("token", JSON.stringify(data));
+
             console.log("Токен успешно сохранен в localStorage"); // <- ПОСЛЕ записи localStorage
             return data;
         });
@@ -69,13 +75,15 @@ export function loginUser({ login, password }) {
         .then((data) => {
             console.log("Данные, полученные после логина:", data); // <- ДО записи localStorage
 
-            
-            /* const tokenString = JSON.stringify(tokenObject); */
-            const tokenString = JSON.stringify( { user: data }); //Оборачиваем в user
+            const tokenString = JSON.stringify(data);
 
-            console.log("Сохраняемая строка токена в localStorage:", tokenString);
-            localStorage.setItem("token", tokenString);
-            console.log("Токен успешно сохранен в localStorage");      // <- ПОСЛЕ записи localStorage
+            console.log(
+                "Сохраняемая строка токена в localStorage:",
+                tokenString
+            );
+
+            localStorage.setItem("token", JSON.stringify(data));
+            console.log("Токен успешно сохранен в localStorage"); // <- ПОСЛЕ записи localStorage
             return data;
         });
 }
@@ -98,7 +106,7 @@ export function addPost({ token, description, imageUrl }) {
     console.log("Токен:", token); // Проверка токена
     console.log("Описание:", description); // Проверка описания
     console.log("URL картинки:", imageUrl); // Проверка URL картинки
-    
+
     return fetch(postsHost, {
         method: "POST",
         headers: {
@@ -120,6 +128,3 @@ export function addPost({ token, description, imageUrl }) {
         }
     });
 }
-
-
-

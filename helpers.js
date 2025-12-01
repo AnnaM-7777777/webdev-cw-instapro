@@ -2,10 +2,13 @@ export function saveUserToLocalStorage(user) {
   window.localStorage.setItem("user", JSON.stringify(user));
 }
 
-export function getUserFromLocalStorage(user) {
+export function getUserFromLocalStorage() {
+  const tokenString = localStorage.getItem("token");
+  if (!tokenString) return null;
   try {
-    return JSON.parse(window.localStorage.getItem("user"));
-  } catch (error) {
+    const parsed = JSON.parse(tokenString);
+    return parsed.user; // Возвращаем именно user, а не весь объект
+  } catch (e) {
     return null;
   }
 }
