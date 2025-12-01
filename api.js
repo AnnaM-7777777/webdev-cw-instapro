@@ -1,7 +1,7 @@
 // Замени на свой, чтобы получить независимый от других набор данных.
 // "боевая" версия инстапро лежит в ключе prod
-const personalKey = "prod";
-const baseHost = "https://webdev-hw-api.vercel.app";
+const personalKey = "AnnaM-7777777";
+const baseHost = " https://wedev-api.sky.pro";
 const postsHost = `${baseHost}/api/v1/${personalKey}/instapro`;
 
 export function getPosts({ token }) {
@@ -40,8 +40,14 @@ export function registerUser({ login, password, name, imageUrl }) {
             return response.json();
         })
         .then((data) => {
-            // Сохраняем токен в localStorage
-            localStorage.setItem("token", data.token);
+            console.log("Данные, полученные после регистрации:", data);  // <- ДО записи localStorage
+
+            const tokenObject  = { user: { token: data.token } };
+            const tokenString = JSON.stringify(tokenObject);
+
+            console.log("Сохраняемая строка токена в localStorage:", tokenString);
+            localStorage.setItem("token", tokenString);
+            console.log("Токен успешно сохранен в localStorage"); // <- ПОСЛЕ записи localStorage
             return data;
         });
 }
@@ -61,8 +67,15 @@ export function loginUser({ login, password }) {
             return response.json();
         })
         .then((data) => {
-            // Сохраняем токен в localStorage
-            localStorage.setItem("token", data.token);
+            console.log("Данные, полученные после логина:", data); // <- ДО записи localStorage
+
+            
+            /* const tokenString = JSON.stringify(tokenObject); */
+            const tokenString = JSON.stringify( { user: data }); //Оборачиваем в user
+
+            console.log("Сохраняемая строка токена в localStorage:", tokenString);
+            localStorage.setItem("token", tokenString);
+            console.log("Токен успешно сохранен в localStorage");      // <- ПОСЛЕ записи localStorage
             return data;
         });
 }
@@ -89,7 +102,7 @@ export function addPost({ token, description, imageUrl }) {
     return fetch(postsHost, {
         method: "POST",
         headers: {
-            Authorization: token,  
+            Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
             description,
@@ -107,3 +120,6 @@ export function addPost({ token, description, imageUrl }) {
         }
     });
 }
+
+
+

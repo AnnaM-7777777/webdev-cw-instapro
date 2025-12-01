@@ -109,19 +109,25 @@ const renderApp = () => {
   if (page === ADD_POSTS_PAGE) {
     return renderAddPostPageComponent({
       appEl,
-      onAddPostClick({ description, imageUrl }) {
-        // @TODO: реализовать добавление поста в API
-        console.log("Добавляю пост...", { description, imageUrl });
-        goToPage(POSTS_PAGE);
+      onGetPosts: () => { 
+        goToPage(POSTS_PAGE); 
       },
     });
   }
 
-  if (page === POSTS_PAGE) {
+  /* if (page === POSTS_PAGE) {
     return renderPostsPageComponent({
       appEl,
     });
-  }
+  } */
+
+    if (page === POSTS_PAGE) {
+  return renderPostsPageComponent({
+    appEl,
+    posts: posts, // Передаем posts
+  });
+}
+
 
   if (page === USER_POSTS_PAGE) {
     // @TODO: реализовать страницу с фотографиями отдельного пользвателя
