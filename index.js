@@ -20,10 +20,11 @@ export let user = getUserFromLocalStorage();
 export let page = null;
 export let posts = [];
 
-const getToken = () => {
+//пока не нужна
+/* const getToken = () => {
     const token = user ? `Bearer ${user.token}` : undefined;
     return token;
-};
+}; */
 
 export const logout = () => {
     user = null;
@@ -54,26 +55,30 @@ export const goToPage = (newPage, data) => {
             page = LOADING_PAGE;
             renderApp();
 
-            return getPosts({ token: getToken() })
+            return getPosts({ token: null }) // ← важно: без токена!
                 .then((newPosts) => {
                     page = POSTS_PAGE;
                     posts = newPosts;
                     renderApp();
-                })
-                .catch((error) => {
-                    console.error(error);
-                    goToPage(POSTS_PAGE);
                 });
         }
 
         if (newPage === USER_POSTS_PAGE) {
-            // @@TODO: реализовать получение постов юзера из API
-            console.log("Открываю страницу пользователя: ", data.userId);
-            page = USER_POSTS_PAGE;
-            posts = [];
-            return renderApp();
-        }
+            const { userId } = data;
+            if (!userId) {
+                console.error("userId не передан");
+                goToPage(POSTS_PAGE);
+                return;
+            }
 
+            // Фильтруем уже загруженные посты
+            const userPosts = posts.filter((post) => post.user.id === userId);
+
+            page = USER_POSTS_PAGE;
+            posts = userPosts;
+            renderApp();
+            return;
+        }
         page = newPage;
         renderApp();
 
@@ -123,9 +128,10 @@ const renderApp = () => {
     }
 
     if (page === USER_POSTS_PAGE) {
-        // @TODO: реализовать страницу с фотографиями отдельного пользвателя
-        appEl.innerHTML = "Здесь будет страница фотографий пользователя";
-        return;
+        return renderPostsPageComponent({
+            appEl,
+            posts: posts,
+        });
     }
 };
 
