@@ -1,3 +1,5 @@
+import { formatDistanceToNow, parseISO } from "date-fns";
+import { ru } from "date-fns/locale";
 import { USER_POSTS_PAGE } from "../routes.js";
 import { renderHeaderComponent } from "./header-component.js";
 import { posts, goToPage, user } from "../index.js";
@@ -10,12 +12,19 @@ export function renderPostsPageComponent({ appEl, user }) {
         .map((post) => {
             // Форматирование даты (если нужно)
             // const formattedDate = formatDistanceToNow(new Date(post.createdAt), { addSuffix: true });
-
+            const formattedDate = post.createdAt
+                ? formatDistanceToNow(parseISO(post.createdAt), {
+                      addSuffix: true,
+                      locale: ru,
+                  })
+                : "Дата не указана";
             const hasUserLiked =
                 user &&
                 Array.isArray(post.likes) &&
                 post.likes.some((like) => like && like.id === user.id);
-            const likeImage = hasUserLiked ? "./assets/images/like-active.svg" : "./assets/images/like-not-active.svg";
+            const likeImage = hasUserLiked
+                ? "./assets/images/like-active.svg"
+                : "./assets/images/like-not-active.svg";
 
             return `
       <li class="post">
@@ -39,7 +48,10 @@ export function renderPostsPageComponent({ appEl, user }) {
           ${post.description}
         </p>
         <p class="post-date">
-          ${post.createdAt}  // Замените на formattedDate, если используете date-fns
+          ${formatDistanceToNow(parseISO(post.createdAt), {
+              addSuffix: true,
+              locale: ru,
+          })}
         </p>
       </li>
     `;
