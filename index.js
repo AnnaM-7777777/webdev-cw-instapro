@@ -124,6 +124,7 @@ const renderApp = () => {
         return renderPostsPageComponent({
             appEl,
             posts: posts, // Передаем posts
+            user: user,
         });
     }
 
@@ -131,6 +132,7 @@ const renderApp = () => {
         return renderPostsPageComponent({
             appEl,
             posts: posts,
+            user: user,
         });
     }
 };

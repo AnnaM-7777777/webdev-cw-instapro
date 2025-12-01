@@ -1,7 +1,7 @@
 // Замени на свой, чтобы получить независимый от других набор данных.
 // "боевая" версия инстапро лежит в ключе prod
 const personalKey = "AnnaM-7777777";
-const baseHost = " https://wedev-api.sky.pro";
+const baseHost = "https://wedev-api.sky.pro";
 const postsHost = `${baseHost}/api/v1/${personalKey}/instapro`;
 
 export function getPosts({ token }) {
@@ -126,5 +126,42 @@ export function addPost({ token, description, imageUrl }) {
         } else {
             throw new Error(`Ошибка при создании поста: ${response.status}`);
         }
+    });
+}
+
+// Ставит лайк посту
+export function addLike({ token, postId }) {
+    return fetch(`${postsHost}/${postId}/like`, {
+        method: "POST",
+        headers: {
+            Authorization: `Bearer ${token}`,
+        },
+    }).then((response) => {
+        if (!response.ok) {
+            throw new Error("Не удалось поставить лайк");
+        }
+        // Проверяем, есть ли тело ответа
+        const contentType = response.headers.get("content-type");
+        if (contentType && contentType.includes("application/json")) {
+            return response.json(); // возвращаем обновлённый пост
+        } else {
+            // Если тела нет — возвращаем null, и обновляем локально
+            return null;
+        }
+    });
+}
+
+// Удаляет лайк у поста
+export function removeLike({ token, postId }) {
+    return fetch(`${postsHost}/${postId}/dislike`, {
+        method: "POST",
+        headers: {
+            Authorization: `Bearer ${token}`,
+        },
+    }).then((response) => {
+        if (!response.ok) {
+            throw new Error("Не удалось убрать лайк");
+        }
+        return response.json();
     });
 }
