@@ -15,9 +15,7 @@ export function renderPostsPageComponent({ appEl, user }) {
                 user &&
                 Array.isArray(post.likes) &&
                 post.likes.some((like) => like && like.id === user.id);
-            const likeImage = hasUserLiked
-                ? "./assets/images/like-active.svg"
-                : "./assets/images/like-not-active.svg";
+            const likeImage = hasUserLiked ? "./assets/images/like-active.svg" : "./assets/images/like-not-active.svg";
 
             return `
       <li class="post">

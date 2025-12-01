@@ -39,6 +39,7 @@ export function registerUser({ login, password, name, imageUrl }) {
             if (response.status === 400) {
                 throw new Error("Такой пользователь уже существует");
             }
+            
             return response.json();
         })
         .then((data) => {
