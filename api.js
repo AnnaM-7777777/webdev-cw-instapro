@@ -39,7 +39,7 @@ export function registerUser({ login, password, name, imageUrl }) {
             if (response.status === 400) {
                 throw new Error("Такой пользователь уже существует");
             }
-            
+
             return response.json();
         })
         .then((data) => {
@@ -164,5 +164,20 @@ export function removeLike({ token, postId }) {
             throw new Error("Не удалось убрать лайк");
         }
         return response.json();
+    });
+}
+
+// Удаляет пост по ID
+export function deletePost({ token, postId }) {
+    return fetch(`${postsHost}/${postId}`, {
+        method: "DELETE",
+        headers: {
+            Authorization: `Bearer ${token}`,
+        },
+    }).then((response) => {
+        if (!response.ok) {
+            throw new Error("Не удалось удалить пост");
+        }
+        return; // Удаление обычно не возвращает тело
     });
 }

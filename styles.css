@@ -90,6 +90,10 @@
   align-items: center;
 }
 
+.post-likes-text {
+    flex-grow: 1;
+}
+
 .like-button {
   border: none;
   background-color: transparent;
@@ -206,9 +210,6 @@
 
 
 
-
-
-
 .form-row {
   margin-bottom: 10px;
 }
@@ -243,4 +244,23 @@
 
 .button:hover {
   background-color: #3e8e41;
+}
+
+.post-delete-button {
+  border-radius: 5px;
+  border: #8a8a8a 1px solid;
+  width: 25px;
+  margin: 0;
+  padding: 2px;
+  background-color: #ffffff00;
+  cursor: pointer;
+  transition: 0.3s ease-in-out;
+}
+
+.post-delete-button:hover {
+  background-color: #8a8a8a27;
+}
+
+.post-delete-img {
+  width: 100%;  
 }

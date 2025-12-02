@@ -3,7 +3,7 @@ import { ru } from "date-fns/locale";
 import { USER_POSTS_PAGE } from "../routes.js";
 import { renderHeaderComponent } from "./header-component.js";
 import { posts, goToPage, user } from "../index.js";
-import { addLike, removeLike } from "../api.js"; // чтобы получить токен
+import { addLike, removeLike, deletePost } from "../api.js"; // чтобы получить токен
 
 export function renderPostsPageComponent({ appEl, user }) {
     console.log("Актуальный список постов:", posts);
@@ -25,47 +25,61 @@ export function renderPostsPageComponent({ appEl, user }) {
             const likeImage = hasUserLiked
                 ? "./assets/images/like-active.svg"
                 : "./assets/images/like-not-active.svg";
+            const canDelete = user && post.user.id === user._id;
+            const deleteButtonHtml = canDelete
+                ? `<button class="post-delete-button" data-post-id="${post.id}">
+              <img class="post-delete-img" src="assets/images/delete_icon.svg" alt="Удалить">
+            </button>`
+                : "";
 
             return `
-      <li class="post">
-        <div class="post-header" data-user-id="${post.user.id}">
-          <img src="${post.user.imageUrl}" class="post-header__user-image">
-          <p class="post-header__user-name">${post.user.name}</p>
-        </div>
-        <div class="post-image-container">
-          <img class="post-image" src="${post.imageUrl}">
-        </div>
-        <div class="post-likes">
-        <button data-post-id="${post.id}" class="like-button">
-          <img src="${likeImage}">
-        </button>
-        <p class="post-likes-text">
-          Нравится: <strong>${post.likes.length}</strong>
-        </p>
-      </div>
-        <p class="post-text">
-          <span class="user-name">${post.user.name}</span>
-          ${post.description}
-        </p>
-        <p class="post-date">
-          ${formatDistanceToNow(parseISO(post.createdAt), {
-              addSuffix: true,
-              locale: ru,
-          })}
-        </p>
-      </li>
-    `;
+          <li class="post">
+            <div class="post-header" data-user-id="${post.user.id}">
+              <img src="${post.user.imageUrl}" class="post-header__user-image">
+              <p class="post-header__user-name">${post.user.name}</p>
+            </div>
+
+            <div class="post-image-container">
+              <img class="post-image" src="${post.imageUrl}">
+            </div>
+
+            <div class="post-likes">
+              <button data-post-id="${post.id}" class="like-button">
+                <img src="${likeImage}">
+              </button>
+
+              <p class="post-likes-text">
+                Нравится: <strong>${post.likes.length}</strong>
+              </p>
+
+              ${deleteButtonHtml}          
+            </div>
+
+            <p class="post-text">
+              <span class="user-name">${post.user.name}</span>
+              ${post.description}
+            </p>
+            
+            <p class="post-date">
+              ${formatDistanceToNow(parseISO(post.createdAt), {
+                  addSuffix: true,
+                  locale: ru,
+              })}
+            </p>
+          </li>
+        `;
         })
         .join(""); // <-  Преобразуем массив HTML-элементов в одну строку
 
     const appHtml = `
-    <div class="page-container">
-      <div class="header-container"></div>
-      <ul class="posts">
-        ${postListHtml}
-      </ul>
-    </div>
-  `;
+      <div class="page-container">
+        <div class="header-container"></div>
+
+        <ul class="posts">
+          ${postListHtml}
+        </ul>
+      </div>
+    `;
 
     appEl.innerHTML = appHtml;
 
@@ -113,8 +127,34 @@ export function renderPostsPageComponent({ appEl, user }) {
 
             // Перерисовываем сразу (оптимистичный UI)
             renderPostsPageComponent({ appEl, user });
+        });
+    });
 
-            // Обрабатываем ошибку — откатываем
+    // Удаление постов
+    document.querySelectorAll(".post-delete-button").forEach((button) => {
+        button.addEventListener("click", () => {
+            if (!user) return;
+
+            const postId = button.dataset.postId;
+            const confirmed = confirm(
+                "Вы уверены, что хотите удалить этот пост?"
+            );
+            if (!confirmed) return;
+
+            deletePost({ token: user.token, postId })
+                .then(() => {
+                    // Удаляем пост из локального массива
+                    const index = posts.findIndex((p) => p.id === postId);
+                    if (index !== -1) {
+                        posts.splice(index, 1);
+                    }
+                    // Перерисовываем
+                    renderPostsPageComponent({ appEl, user });
+                })
+                .catch((error) => {
+                    console.error("Ошибка удаления:", error);
+                    alert("Не удалось удалить пост");
+                });
         });
     });
 }

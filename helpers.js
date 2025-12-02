@@ -13,6 +13,6 @@ export function getUserFromLocalStorage() {
   }
 }
 
-export function removeUserFromLocalStorage(user) {
-  window.localStorage.removeItem("user");
+export function removeUserFromLocalStorage() {
+  window.localStorage.removeItem("token");
 }
