@@ -178,6 +178,6 @@ export function deletePost({ token, postId }) {
         if (!response.ok) {
             throw new Error("Не удалось удалить пост");
         }
-        return; // Удаление обычно не возвращает тело
+        return;
     });
 }

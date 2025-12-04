@@ -22,63 +22,67 @@ export function renderPostsPageComponent({ appEl, user }) {
                 user &&
                 Array.isArray(post.likes) &&
                 post.likes.some((like) => like?.id === user._id);
+
             const likeImage = hasUserLiked
                 ? "./assets/images/like-active.svg"
                 : "./assets/images/like-not-active.svg";
+
+            const isDemoPost = post.id.startsWith("demo-");
             const canDelete = user && post.user.id === user._id;
-            const deleteButtonHtml = canDelete
-                ? `<button class="post-delete-button" data-post-id="${post.id}">
-              <img class="post-delete-img" src="assets/images/delete_icon.svg" alt="Удалить">
-            </button>`
+
+            const likeButtonHtml = isDemoPost
+                ? `<button class="like-button" disabled>
+                    <img src="${likeImage}" alt="${hasUserLiked ? "Лайк активен" : "Лайк неактивен"}">
+                 </button>`
+                : `<button data-post-id="${post.id}" class="like-button">
+                    <img src="${likeImage}" alt="${hasUserLiked ? "Лайк активен" : "Лайк неактивен"}">
+                </button>`;
+
+            const deleteButtonHtml =
+                !isDemoPost && canDelete
+                ? `<button class="post-delete-button" data-post-id="${post.id}" aria-label="Удалить пост">
+                    <img class="post-delete-img" src="./assets/images/delete_icon.svg" alt="Удалить">
+                </button>`
                 : "";
 
             return `
-          <li class="post">
-            <div class="post-header" data-user-id="${post.user.id}">
-              <img src="${post.user.imageUrl}" class="post-header__user-image">
-              <p class="post-header__user-name">${post.user.name}</p>
-            </div>
+                <li class="post">
+                    <div class="post-header" data-user-id="${post.user.id}">
+                        <img src="${post.user.imageUrl}" class="post-header__user-image">
+                        <p class="post-header__user-name">${post.user.name}</p>
+                    </div>
 
-            <div class="post-image-container">
-              <img class="post-image" src="${post.imageUrl}">
-            </div>
+                    <div class="post-image-container">
+                        <img class="post-image" src="${post.imageUrl}">
+                    </div>
 
-            <div class="post-likes">
-              <button data-post-id="${post.id}" class="like-button">
-                <img src="${likeImage}">
-              </button>
+                    <div class="post-likes">
+                        ${likeButtonHtml}
+                        <p class="post-likes-text">Нравится: <strong>${post.likes.length}</strong></p>
+                        ${deleteButtonHtml}          
+                    </div>
 
-              <p class="post-likes-text">
-                Нравится: <strong>${post.likes.length}</strong>
-              </p>
-
-              ${deleteButtonHtml}          
-            </div>
-
-            <p class="post-text">
-              <span class="user-name">${post.user.name}</span>
-              ${post.description}
-            </p>
-            
-            <p class="post-date">
-              ${formatDistanceToNow(parseISO(post.createdAt), {
-                  addSuffix: true,
-                  locale: ru,
-              })}
-            </p>
-          </li>
-        `;
+                    <p class="post-text">
+                        <span class="user-name">${post.user.name}</span>
+                        ${post.description}
+                    </p>
+                    
+                    <p class="post-date">
+                        ${formatDistanceToNow(parseISO(post.createdAt), {addSuffix: true, locale: ru,})}
+                    </p>
+                </li>
+            `;
         })
-        .join(""); // <-  Преобразуем массив HTML-элементов в одну строку
+        .join(""); // <- Преобразуем массив HTML-элементов в одну строку
 
     const appHtml = `
-      <div class="page-container">
-        <div class="header-container"></div>
+        <div class="page-container">
+            <div class="header-container"></div>
 
-        <ul class="posts">
-          ${postListHtml}
-        </ul>
-      </div>
+            <ul class="posts">
+                ${postListHtml}
+            </ul>
+        </div>
     `;
 
     appEl.innerHTML = appHtml;
@@ -95,73 +99,85 @@ export function renderPostsPageComponent({ appEl, user }) {
         });
     }
 
-    // Обработчик клика по кнопке лайка
+    // Обработчик лайков — только для не -демо постов
+    document
+        .querySelectorAll(".like-button:not([disabled])")
+        .forEach((button) => {
+            button.addEventListener("click", () => {
+                const postId = button.dataset.postId;
 
-    document.querySelectorAll(".like-button").forEach((button) => {
-    button.addEventListener("click", () => {
-        const postId = button.dataset.postId;
-        const post = posts.find((p) => p.id === postId);
+                // Защита на случай, если data-post-id не задан
+                if (!postId || postId.startsWith("demo-")) return;
 
-        if (!post || !user) {
-            alert("Чтобы ставить лайки, войдите в аккаунт");
-            return;
-        }
+                const post = posts.find((p) => p.id === postId);
+                if (!post || !user) {
+                    alert("Чтобы ставить лайки, войдите в аккаунт");
+                    return;
+                }
 
-        //ЕДИНСТВЕННЫЙ ПРАВИЛЬНЫЙ СПОСОБ для API (объекты)
-        const hasUserLiked = Array.isArray(post.likes) && 
-            post.likes.some(like => like?.id === user._id);
+                const hasUserLiked =
+                    Array.isArray(post.likes) &&
+                    post.likes.some((like) => like?.id === user._id);
 
-        if (hasUserLiked) {
-            post.likes = post.likes.filter(like => like?.id !== user._id);
-        } else {
-            post.likes.push({ id: user._id, name: user.name || "Пользователь" });
-        }
+                if (hasUserLiked) {
+                    post.likes = post.likes.filter(
+                        (like) => like?.id !== user._id
+                    );
+                } else {
+                    post.likes.push({
+                        id: user._id,
+                        name: user.name || "Пользователь",
+                    });
+                }
 
-        renderPostsPageComponent({ appEl, user });
+                renderPostsPageComponent({ appEl, user });
 
-        const request = hasUserLiked
-            ? removeLike({ token: user.token, postId })
-            : addLike({ token: user.token, postId });
+                const request = hasUserLiked
+                    ? removeLike({ token: user.token, postId })
+                    : addLike({ token: user.token, postId });
 
-        request.catch((error) => {
-            console.error("Ошибка:", error);
-            // Откатываем локально — тем же способом
-            if (hasUserLiked) {
-                post.likes.push({ id: user._id, name: user.name || "Пользователь" });
-            } else {
-                post.likes = post.likes.filter(like => like?.id !== user._id);
-            }
-            renderPostsPageComponent({ appEl, user });
-            alert("Не удалось обновить лайк");
+                request.catch((error) => {
+                    console.error("Ошибка:", error);
+                    if (hasUserLiked) {
+                        post.likes.push({
+                            id: user._id,
+                            name: user.name || "Пользователь",
+                        });
+                    } else {
+                        post.likes = post.likes.filter(
+                            (like) => like?.id !== user._id
+                        );
+                    }
+                    renderPostsPageComponent({ appEl, user });
+                    alert("Не удалось обновить лайк");
+                });
+            });
         });
-    });
-});
 
     // Удаление постов
     document.querySelectorAll(".post-delete-button").forEach((button) => {
         button.addEventListener("click", () => {
-            if (!user) return;
-
             const postId = button.dataset.postId;
+            if (!postId || postId.startsWith("demo-")) return;
+
+            if (!user) return;
             const confirmed = confirm(
                 "Вы уверены, что хотите удалить этот пост?"
             );
             if (!confirmed) return;
 
             deletePost({ token: user.token, postId })
-                .then(() => {
-                    // Удаляем пост из локального массива
-                    const index = posts.findIndex((p) => p.id === postId);
-                    if (index !== -1) {
-                        posts.splice(index, 1);
-                    }
-                    // Перерисовываем
-                    renderPostsPageComponent({ appEl, user });
-                })
-                .catch((error) => {
-                    console.error("Ошибка удаления:", error);
-                    alert("Не удалось удалить пост");
-                });
+            .then(() => {
+                const index = posts.findIndex((p) => p.id === postId);
+                if (index !== -1) {
+                    posts.splice(index, 1);
+                }
+                renderPostsPageComponent({ appEl, user });
+            })
+            .catch((error) => {
+                console.error("Ошибка удаления:", error);
+                alert("Не удалось удалить пост");
+            });
         });
     });
 }

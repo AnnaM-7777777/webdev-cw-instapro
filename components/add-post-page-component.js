@@ -1,9 +1,14 @@
 import { addPost, uploadImage } from "../api.js"; // Import функции addPost
 
-export function renderAddPostPageComponent({ appEl, onGetPosts }) {
+export function renderAddPostPageComponent({ appEl, onGetPosts, user }) {
     let imageUrl = "";
     let isUploading = false; // Добавляем состояние загрузки
-    let token = null;
+
+    const token = user?.token;
+    if (!token) {
+        showErrorMessage("Вы не авторизованы...");
+        return;
+    }
 
     const render = () => {
         const appHtml = `
@@ -31,7 +36,9 @@ export function renderAddPostPageComponent({ appEl, onGetPosts }) {
                 ${isUploading ? `<div class="form-row">Загрузка...</div>` : ""}
 
                 <div class="form-row">
-                    <button class="button" id="add-button" ${isUploading ? "disabled" : ""}>Добавить</button>
+                    <button class="button" id="add-button" ${
+                        isUploading ? "disabled" : ""
+                    }>Добавить</button>
                 </div>
                 </div>
             </div>
@@ -49,6 +56,11 @@ export function renderAddPostPageComponent({ appEl, onGetPosts }) {
                 const file = uploadImageInput.files[0];
 
                 // Проверка типа файла
+                if (!file || file.size === 0) {
+                    showErrorMessage("Файл пустой");
+                    return;
+                }
+
                 if (!file.type.startsWith("image/")) {
                     showErrorMessage("Пожалуйста, загрузите изображение.");
                     return;
@@ -73,7 +85,6 @@ export function renderAddPostPageComponent({ appEl, onGetPosts }) {
                     })
                     .finally(() => {
                         isUploading = false;
-                        render();
                     });
             }
         });
@@ -93,7 +104,10 @@ export function renderAddPostPageComponent({ appEl, onGetPosts }) {
             if (tokenString) {
                 try {
                     const tokenData = JSON.parse(tokenString); // → { user: { token: "...", ... } }
-                    token = tokenData && tokenData.user ? tokenData.user.token : null;
+                    token =
+                        tokenData && tokenData.user
+                            ? tokenData.user.token
+                            : null;
 
                     console.log("Извлеченный токен:", token);
                 } catch (error) {
@@ -127,7 +141,7 @@ export function renderAddPostPageComponent({ appEl, onGetPosts }) {
                     descriptionInput.value = "";
                     imageUrlInput.value = "";
                     imageUrl = "";
-                    onGetPosts(); //  Обновляем список постов
+                    onGetPosts(); // Обновляем список постов
                     render();
                 })
                 .catch((error) => {
