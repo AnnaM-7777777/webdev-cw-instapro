@@ -21,7 +21,7 @@ export function renderPostsPageComponent({ appEl, user }) {
             const hasUserLiked =
                 user &&
                 Array.isArray(post.likes) &&
-                post.likes.some((like) => like && like.id === user.id);
+                post.likes.some((like) => like?.id === user._id);
             const likeImage = hasUserLiked
                 ? "./assets/images/like-active.svg"
                 : "./assets/images/like-not-active.svg";
@@ -96,39 +96,46 @@ export function renderPostsPageComponent({ appEl, user }) {
     }
 
     // Обработчик клика по кнопке лайка
+
     document.querySelectorAll(".like-button").forEach((button) => {
-        button.addEventListener("click", () => {
-            const postId = button.dataset.postId;
-            const post = posts.find((p) => p.id === postId);
+    button.addEventListener("click", () => {
+        const postId = button.dataset.postId;
+        const post = posts.find((p) => p.id === postId);
 
-            if (!user) {
-                alert("Чтобы ставить лайки, нужно войти в аккаунт");
-                return;
-            }
+        if (!post || !user) {
+            alert("Чтобы ставить лайки, войдите в аккаунт");
+            return;
+        }
 
-            const hasUserLiked =
-                user &&
-                Array.isArray(post.likes) &&
-                post.likes.some((like) => like && like.id === user.id);
+        //ЕДИНСТВЕННЫЙ ПРАВИЛЬНЫЙ СПОСОБ для API (объекты)
+        const hasUserLiked = Array.isArray(post.likes) && 
+            post.likes.some(like => like?.id === user._id);
 
-            let apiCall;
+        if (hasUserLiked) {
+            post.likes = post.likes.filter(like => like?.id !== user._id);
+        } else {
+            post.likes.push({ id: user._id, name: user.name || "Пользователь" });
+        }
 
-            // Локально обновляем + запускаем запрос
+        renderPostsPageComponent({ appEl, user });
+
+        const request = hasUserLiked
+            ? removeLike({ token: user.token, postId })
+            : addLike({ token: user.token, postId });
+
+        request.catch((error) => {
+            console.error("Ошибка:", error);
+            // Откатываем локально — тем же способом
             if (hasUserLiked) {
-                post.likes = post.likes.filter((like) => like.id !== user.id);
-                apiCall = removeLike({ token: user.token, postId });
+                post.likes.push({ id: user._id, name: user.name || "Пользователь" });
             } else {
-                post.likes.push({
-                    id: user.id,
-                    name: user.name || "Пользователь",
-                });
-                apiCall = addLike({ token: user.token, postId });
+                post.likes = post.likes.filter(like => like?.id !== user._id);
             }
-
-            // Перерисовываем сразу (оптимистичный UI)
             renderPostsPageComponent({ appEl, user });
+            alert("Не удалось обновить лайк");
         });
     });
+});
 
     // Удаление постов
     document.querySelectorAll(".post-delete-button").forEach((button) => {

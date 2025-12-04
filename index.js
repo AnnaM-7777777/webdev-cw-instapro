@@ -32,7 +32,6 @@ export const logout = () => {
     goToPage(POSTS_PAGE);
 };
 
-
 //Включает страницу приложения
 export const goToPage = (newPage, data) => {
     if (
@@ -54,11 +53,18 @@ export const goToPage = (newPage, data) => {
             page = LOADING_PAGE;
             renderApp();
 
-            return getPosts({ token: null }) // ← важно: без токена!
+            // Передаём токен, если пользователь залогинен
+            const token = user ? `Bearer ${user.token}` : null;
+
+            return getPosts({ token })
                 .then((newPosts) => {
                     page = POSTS_PAGE;
                     posts = newPosts;
                     renderApp();
+                })
+                .catch((error) => {
+                    console.error(error);
+                    goToPage(POSTS_PAGE);
                 });
         }
 
