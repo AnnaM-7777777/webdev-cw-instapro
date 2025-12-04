@@ -8,28 +8,31 @@ export function renderAddPostPageComponent({ appEl, onGetPosts }) {
     const render = () => {
         const appHtml = `
             <div class="page-container">
-                <div class="header-container"></div>
-                
                 <div class="header-container">
-                    <h1>Добавить новый пост</h1>
+                <h1>Добавить новый пост</h1>
                 </div>
 
                 <div class="form">
-                    <div class="form-row">
-                        <label>Описание:</label>
-                        <textarea id="description-input"></textarea>
-                    </div>
+                <div class="form-row">
+                    <label>Описание:</label>
+                    <textarea id="description-input"></textarea>
+                </div>
 
-                    <div class="form-row">
-                        <label>Ссылка на изображение:</label>
-                        <input type="text" id="image-url-input"  value="${imageUrl}"/>
-                    </div>
+                <div class="form-row">
+                    <label>Ссылка на изображение:</label>
+                    <input type="text" id="image-url-input" value="${imageUrl}"/>
+                </div>
 
-                    ${isUploading ? `<div class="form-row">Загрузка...</div>` : ""}
-                    
-                    <div class="form-row">
-                        <button class="button" id="add-button" ${isUploading ? "disabled" : ""}>Добавить</button>
-                    </div>
+                <div class="form-row">
+                    <label>Или загрузите изображение:</label>
+                    <input type="file" id="upload-image-input" accept="image/*" />
+                </div>
+
+                ${isUploading ? `<div class="form-row">Загрузка...</div>` : ""}
+
+                <div class="form-row">
+                    <button class="button" id="add-button" ${isUploading ? "disabled" : ""}>Добавить</button>
+                </div>
                 </div>
             </div>
         `;
