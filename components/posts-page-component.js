@@ -3,9 +3,14 @@ import { ru } from "date-fns/locale";
 import { USER_POSTS_PAGE } from "../routes.js";
 import { renderHeaderComponent } from "./header-component.js";
 import { posts, goToPage, user } from "../index.js";
-import { addLike, removeLike, deletePost } from "../api.js"; // чтобы получить токен
+import { addLike, removeLike, deletePost } from "../api.js"; // <- Чтобы получить токен
 
 export function renderPostsPageComponent({ appEl, user }) {
+    if (!posts || !Array.isArray(posts)) {
+        appEl.innerHTML = "<p>Загрузка...</p>";
+        return;
+    }
+
     console.log("Актуальный список постов:", posts);
 
     const postListHtml = posts
@@ -32,23 +37,29 @@ export function renderPostsPageComponent({ appEl, user }) {
 
             const likeButtonHtml = isDemoPost
                 ? `<button class="like-button" disabled>
-                    <img src="${likeImage}" alt="${hasUserLiked ? "Лайк активен" : "Лайк неактивен"}">
+                    <img src="${likeImage}" alt="${
+                      hasUserLiked ? "Лайк активен" : "Лайк неактивен"
+                  }">
                  </button>`
                 : `<button data-post-id="${post.id}" class="like-button">
-                    <img src="${likeImage}" alt="${hasUserLiked ? "Лайк активен" : "Лайк неактивен"}">
+                    <img src="${likeImage}" alt="${
+                      hasUserLiked ? "Лайк активен" : "Лайк неактивен"
+                  }">
                 </button>`;
 
             const deleteButtonHtml =
                 !isDemoPost && canDelete
-                ? `<button class="post-delete-button" data-post-id="${post.id}" aria-label="Удалить пост">
+                    ? `<button class="post-delete-button" data-post-id="${post.id}" aria-label="Удалить пост">
                     <img class="post-delete-img" src="./assets/images/delete_icon.svg" alt="Удалить">
                 </button>`
-                : "";
+                    : "";
 
             return `
                 <li class="post">
                     <div class="post-header" data-user-id="${post.user.id}">
-                        <img src="${post.user.imageUrl}" class="post-header__user-image">
+                        <img src="${
+                            post.user.imageUrl
+                        }" class="post-header__user-image">
                         <p class="post-header__user-name">${post.user.name}</p>
                     </div>
 
@@ -58,7 +69,9 @@ export function renderPostsPageComponent({ appEl, user }) {
 
                     <div class="post-likes">
                         ${likeButtonHtml}
-                        <p class="post-likes-text">Нравится: <strong>${post.likes.length}</strong></p>
+                        <p class="post-likes-text">Нравится: <strong>${
+                            post.likes.length
+                        }</strong></p>
                         ${deleteButtonHtml}          
                     </div>
 
@@ -68,7 +81,10 @@ export function renderPostsPageComponent({ appEl, user }) {
                     </p>
                     
                     <p class="post-date">
-                        ${formatDistanceToNow(parseISO(post.createdAt), {addSuffix: true, locale: ru,})}
+                        ${formatDistanceToNow(parseISO(post.createdAt), {
+                            addSuffix: true,
+                            locale: ru,
+                        })}
                     </p>
                 </li>
             `;
@@ -87,97 +103,110 @@ export function renderPostsPageComponent({ appEl, user }) {
 
     appEl.innerHTML = appHtml;
 
+    // Очистка старых обработчиков
+    appEl.querySelectorAll(".like-button, .post-delete-button, .post-header").forEach((el) => {
+        el.replaceWith(el.cloneNode(true));
+    });
+
     renderHeaderComponent({
         element: document.querySelector(".header-container"),
     });
 
-    for (let userEl of document.querySelectorAll(".post-header")) {
-        userEl.addEventListener("click", () => {
-            goToPage(USER_POSTS_PAGE, {
-                userId: userEl.dataset.userId,
+    // Обработчик лайка
+    const handleLike = (postId) => {
+        const post = posts.find((p) => p.id === postId);
+        if (!post || !user) {
+            alert("Чтобы ставить лайки, войдите в аккаунт");
+            return;
+        }
+
+        const hasUserLiked =
+            Array.isArray(post.likes) &&
+            post.likes.some((like) => like?.id === user._id);
+
+        if (hasUserLiked) {
+            post.likes = post.likes.filter((like) => like?.id !== user._id);
+        } else {
+            post.likes.push({
+                id: user._id,
+                name: user.name || "Пользователь",
             });
+        }
+
+        renderPostsPageComponent({ appEl, user });
+
+        const request = hasUserLiked
+            ? removeLike({ token: user.token, postId })
+            : addLike({ token: user.token, postId });
+
+        request.catch((error) => {
+            console.error("Ошибка:", error);
+
+            // Откат
+            if (hasUserLiked) {
+                post.likes.push({
+                    id: user._id,
+                    name: user.name || "Пользователь",
+                });
+            } else {
+                post.likes = post.likes.filter((like) => like?.id !== user._id);
+            }
+            renderPostsPageComponent({ appEl, user });
+            alert("Не удалось обновить лайк");
         });
+    };
+
+    // Обработчик удаления
+    const handleDelete = (postId) => {
+        if (!user) {
+            alert("Чтобы удалять посты, войдите в аккаунт");
+            return;
+        }
+
+        const confirmed = confirm("Вы уверены, что хотите удалить этот пост?");
+        if (!confirmed) return;
+
+        deletePost({ token: user.token, postId })
+        .then(() => {
+            const index = posts.findIndex((p) => p.id === postId);
+
+            if (index !== -1) {
+                posts.splice(index, 1);
+            }
+
+            renderPostsPageComponent({ appEl, user });
+        })
+        .catch((error) => {
+            console.error("Ошибка удаления:", error);
+            alert("Не удалось удалить пост");
+        });
+    };
+
+    // Обработчик лайков (только для не -демо постов)
+    if (appEl._hasPostClickListener) {
+        appEl.removeEventListener("click", appEl._postClickHandler);
     }
 
-    // Обработчик лайков — только для не -демо постов
-    document
-        .querySelectorAll(".like-button:not([disabled])")
-        .forEach((button) => {
-            button.addEventListener("click", () => {
-                const postId = button.dataset.postId;
+    // Создаём новый обработчик
+    const clickHandler = (e) => {
+        if (e.target.closest(".like-button:not([disabled])")) {
+            const postId = e.target.closest(".like-button").dataset.postId;
+            handleLike(postId);
 
-                // Защита на случай, если data-post-id не задан
-                if (!postId || postId.startsWith("demo-")) return;
+        } else if (e.target.closest(".post-delete-button")) {
+            const postId = e.target.closest(".post-delete-button").dataset.postId;
+            handleDelete(postId);
 
-                const post = posts.find((p) => p.id === postId);
-                if (!post || !user) {
-                    alert("Чтобы ставить лайки, войдите в аккаунт");
-                    return;
-                }
+        } else if (e.target.closest(".post-header")) {
+            const userId = e.target.closest(".post-header").dataset.userId;
+            goToPage(USER_POSTS_PAGE, { userId });
+        }
+    };
 
-                const hasUserLiked =
-                    Array.isArray(post.likes) &&
-                    post.likes.some((like) => like?.id === user._id);
+    // Сохраняем обработчик и флаг
+    appEl._postClickHandler = clickHandler;
+    appEl._hasPostClickListener = true;
 
-                if (hasUserLiked) {
-                    post.likes = post.likes.filter(
-                        (like) => like?.id !== user._id
-                    );
-                } else {
-                    post.likes.push({
-                        id: user._id,
-                        name: user.name || "Пользователь",
-                    });
-                }
-
-                renderPostsPageComponent({ appEl, user });
-
-                const request = hasUserLiked
-                    ? removeLike({ token: user.token, postId })
-                    : addLike({ token: user.token, postId });
-
-                request.catch((error) => {
-                    console.error("Ошибка:", error);
-                    if (hasUserLiked) {
-                        post.likes.push({
-                            id: user._id,
-                            name: user.name || "Пользователь",
-                        });
-                    } else {
-                        post.likes = post.likes.filter(
-                            (like) => like?.id !== user._id
-                        );
-                    }
-                    renderPostsPageComponent({ appEl, user });
-                    alert("Не удалось обновить лайк");
-                });
-            });
-        });
-
-    // Удаление постов
-    document.querySelectorAll(".post-delete-button").forEach((button) => {
-        button.addEventListener("click", () => {
-            const postId = button.dataset.postId;
-            if (!postId || postId.startsWith("demo-")) return;
-
-            if (!user) return;
-            const confirmed = confirm(
-                "Вы уверены, что хотите удалить этот пост?"
-            );
-            if (!confirmed) return;
-
-            deletePost({ token: user.token, postId })
-            .then(() => {
-                const index = posts.findIndex((p) => p.id === postId);
-                if (index !== -1) {
-                    posts.splice(index, 1);
-                }
-                renderPostsPageComponent({ appEl, user });
-            })
-            .catch((error) => {
-                console.error("Ошибка удаления:", error);
-                alert("Не удалось удалить пост");
-            });
-        });
-    });
+    // Добавляем
+    appEl.addEventListener("click", clickHandler);
 }
