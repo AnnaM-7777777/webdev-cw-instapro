@@ -4,8 +4,10 @@ import { USER_POSTS_PAGE } from "../routes.js";
 import { renderHeaderComponent } from "./header-component.js";
 import { posts, goToPage, user } from "../index.js";
 import { addLike, removeLike, deletePost } from "../api.js"; // <- Чтобы получить токен
+import { escapeHtml } from "../helpers.js";
 
 export function renderPostsPageComponent({ appEl, user }) {
+
     if (!posts || !Array.isArray(posts)) {
         appEl.innerHTML = "<p>Загрузка...</p>";
         return;
@@ -15,6 +17,10 @@ export function renderPostsPageComponent({ appEl, user }) {
 
     const postListHtml = posts
         .map((post) => {
+            console.log("Рендер поста:", {
+                description: post.description,
+                escaped: escapeHtml(post.description),
+            });
             // Форматирование даты (если нужно)
             // const formattedDate = formatDistanceToNow(new Date(post.createdAt), { addSuffix: true });
             const formattedDate = post.createdAt
@@ -76,8 +82,10 @@ export function renderPostsPageComponent({ appEl, user }) {
                     </div>
 
                     <p class="post-text">
-                        <span class="user-name">${post.user.name}</span>
-                        ${post.description}
+                        <span class="user-name">${escapeHtml(
+                            post.user.name
+                        )}</span>
+                        ${escapeHtml(post.description)}
                     </p>
                     
                     <p class="post-date">
@@ -104,9 +112,11 @@ export function renderPostsPageComponent({ appEl, user }) {
     appEl.innerHTML = appHtml;
 
     // Очистка старых обработчиков
-    appEl.querySelectorAll(".like-button, .post-delete-button, .post-header").forEach((el) => {
-        el.replaceWith(el.cloneNode(true));
-    });
+    appEl
+        .querySelectorAll(".like-button, .post-delete-button, .post-header")
+        .forEach((el) => {
+            el.replaceWith(el.cloneNode(true));
+        });
 
     renderHeaderComponent({
         element: document.querySelector(".header-container"),
@@ -167,19 +177,19 @@ export function renderPostsPageComponent({ appEl, user }) {
         if (!confirmed) return;
 
         deletePost({ token: user.token, postId })
-        .then(() => {
-            const index = posts.findIndex((p) => p.id === postId);
+            .then(() => {
+                const index = posts.findIndex((p) => p.id === postId);
 
-            if (index !== -1) {
-                posts.splice(index, 1);
-            }
+                if (index !== -1) {
+                    posts.splice(index, 1);
+                }
 
-            renderPostsPageComponent({ appEl, user });
-        })
-        .catch((error) => {
-            console.error("Ошибка удаления:", error);
-            alert("Не удалось удалить пост");
-        });
+                renderPostsPageComponent({ appEl, user });
+            })
+            .catch((error) => {
+                console.error("Ошибка удаления:", error);
+                alert("Не удалось удалить пост");
+            });
     };
 
     // Обработчик лайков (только для не -демо постов)
@@ -192,11 +202,10 @@ export function renderPostsPageComponent({ appEl, user }) {
         if (e.target.closest(".like-button:not([disabled])")) {
             const postId = e.target.closest(".like-button").dataset.postId;
             handleLike(postId);
-
         } else if (e.target.closest(".post-delete-button")) {
-            const postId = e.target.closest(".post-delete-button").dataset.postId;
+            const postId = e.target.closest(".post-delete-button").dataset
+                .postId;
             handleDelete(postId);
-
         } else if (e.target.closest(".post-header")) {
             const userId = e.target.closest(".post-header").dataset.userId;
             goToPage(USER_POSTS_PAGE, { userId });
