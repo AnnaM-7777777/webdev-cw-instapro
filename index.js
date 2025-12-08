@@ -91,8 +91,7 @@ export const goToPage = (newPage, data) => {
         ].includes(newPage)
     ) {
         if (newPage === ADD_POSTS_PAGE) {
-            
-            /* Если пользователь не авторизован, то отправляем его на страницу авторизации перед добавлением поста */
+            //Если пользователь не авторизован, то отправляем его на страницу авторизации перед добавлением поста
             page = user ? ADD_POSTS_PAGE : AUTH_PAGE;
             return renderApp();
         }
@@ -175,16 +174,20 @@ const renderApp = () => {
     if (page === POSTS_PAGE) {
         return renderPostsPageComponent({
             appEl,
-            posts: posts, // передаём posts
-            user: user,
+            posts,
+            user,
+            isUserPage: false,
         });
     }
 
     if (page === USER_POSTS_PAGE) {
+        const profileUser = posts.length > 0 ? posts[0].user : null;
         return renderPostsPageComponent({
             appEl,
-            posts: posts,
-            user: user,
+            posts,
+            user,
+            isUserPage: true,
+            profileUser,
         });
     }
 };
